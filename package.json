@@ -1,0 +1,52 @@
+{
+  "name": "node-up-to-date",
+  "version": "1.0.0",
+  "description": "Professional tools for automatically syncing development environments with officially supported Node.js and .NET versions",
+  "main": "update-node.sh",
+  "scripts": {
+    "sync": "./update-node.sh",
+    "sync-dotnet": "./update-dotnet.sh",
+    "dry-run": "./update-node.sh --dry-run",
+    "dry-run-dotnet": "./update-dotnet.sh --dry-run",
+    "quiet": "./update-node.sh --quiet",
+    "test": "shellcheck update-node.sh update-dotnet.sh",
+    "lint": "shellcheck update-node.sh update-dotnet.sh",
+    "install": "chmod +x update-node.sh update-dotnet.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theroks/node-up-to-date.git"
+  },
+  "keywords": [
+    "nodejs",
+    "dotnet",
+    "nvm",
+    "version-manager",
+    "lts",
+    "automation",
+    "development-tools",
+    "shell-script",
+    "node-version-management",
+    "dotnet-sdk",
+    "microsoft-dotnet",
+    "environment-management"
+  ],
+  "author": "Development Environment Version Management Tools Contributors",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/theroks/node-up-to-date/issues"
+  },
+  "homepage": "https://github.com/theroks/node-up-to-date#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "devDependencies": {},
+  "dependencies": {},
+  "bin": {
+    "node-up-to-date": "./update-node.sh"
+  }
+}

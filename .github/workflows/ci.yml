@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+  lint:
+    name: Lint Shell Script
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck
+        run: shellcheck update-node.sh
+
+      - name: Check script is executable
+        run: test -x update-node.sh
+
+  test:
+    name: Test Script
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shell: [bash, zsh]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Make script executable
+        run: chmod +x update-node.sh
+
+      - name: Install NVM
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+      - name: Test dry run
+        shell: ${{ matrix.shell }}
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          ./update-node.sh --dry-run
+
+      - name: Test help command
+        run: ./update-node.sh --help
+
+      - name: Test version command
+        run: ./update-node.sh --version
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security scan
+        run: |
+          # Check for potential security issues in shell script
+          grep -n "eval\|exec\|system\|curl.*|.*sh\|wget.*|.*sh" update-node.sh || true
+
+      - name: Check for hardcoded secrets
+        run: |
+          # Basic check for potential secrets (enhance as needed)
+          grep -i "password\|secret\|key\|token" update-node.sh || true
+
+  documentation:
+    name: Check Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check required files exist
+        run: |
+          test -f README.md
+          test -f LICENSE
+          test -f CONTRIBUTING.md
+          test -f CHANGELOG.md
+          test -f package.json
+
+      - name: Validate package.json
+        run: |
+          if command -v node >/dev/null 2>&1; then
+            node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8'))"
+          fi
+
+  release:
+    name: Create Release
+    if: github.event_name == 'release'
+    needs: [lint, test, security, documentation]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create release archive
+        run: |
+          tar -czf node-up-to-date-${{ github.event.release.tag_name }}.tar.gz \
+            update-node.sh README.md LICENSE CONTRIBUTING.md CHANGELOG.md package.json Makefile
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./node-up-to-date-${{ github.event.release.tag_name }}.tar.gz
+          asset_name: node-up-to-date-${{ github.event.release.tag_name }}.tar.gz
+          asset_content_type: application/gzip
